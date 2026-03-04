@@ -19,7 +19,8 @@ if __name__ == "__main__":
         config={
             # system settings
             "num_gpus": 1,
-            "num_workers": 8,
+            "num_workers": 4,
+            "num_gpus_per_worker": 0,
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",
