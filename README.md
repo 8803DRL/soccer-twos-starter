@@ -1,5 +1,46 @@
 # Soccer-Twos Starter Kit
 
+## How to Run on PACE Cluster
+
+### 1. Interactive Session / Configuration
+Recommended resource selection (ICE/Phoenix nodes):
+![alt text](image.png)
+*Suggested: 1 GPU (A40/A100), 8-16 CPUs, and at least 64GB RAM.*
+
+---
+
+### 2. Environment Setup
+Run the following command to initialize the environment:
+```bash
+bash setup_on_server.sh
+```
+Note on Storage: Due to the Home File System 30GB limit, the soccertwos conda environment is installed onto the Storage Node.
+
+You can monitor your quota usage anytime with:
+
+```Bash
+pace-quota
+```
+### 3. Launch Training
+To start the RL training, ensure you have activated the environment and then execute the training script:
+```Bash
+# Activate from the storage path (substitute to your own path)
+conda activate /storage/ice1/1/4/zguo407/soccertwos
+
+# Run training
+python example_ray_ppo_sp_still.py
+```
+Regarding Ray Warnings:
+The script has been patched to bypass Ray's Dashboard/Metrics errors on PACE compute nodes by forcing 127.0.0.1 binding. If you still see excessive logging, you can redirect the stderr:
+
+```Bash
+python example_ray_ppo_sp_still.py 2> ray_warnings.log
+```
+
+**Below From Original README.md**
+---
+
+
 Example training/testing scripts for the Soccer-Twos environment. This starter code is modified from the example code provided in https://github.com/bryanoliveira/soccer-twos-starter.
 
 Environment-level specification code can be found at https://github.com/bryanoliveira/soccer-twos-env, which may also be useful to reference.

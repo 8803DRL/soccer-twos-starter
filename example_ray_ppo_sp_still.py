@@ -1,15 +1,21 @@
 import ray
 from ray import tune
 from soccer_twos import EnvType
-
+import os
 from utils import create_rllib_env
 
 
-NUM_ENVS_PER_WORKER = 3
+NUM_ENVS_PER_WORKER = 1
+os.environ["RAY_NODE_IP_ADDRESS"] = "127.0.0.1"
+os.environ["RAY_METRICS_SERVICE_ENABLED"] = "0"
+os.environ["RAY_DISABLE_MEMORY_MONITOR"] = "1"
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(
+        _node_ip_address="127.0.0.1",
+        include_dashboard=False,
+    )
 
     tune.registry.register_env("Soccer", create_rllib_env)
 
@@ -20,6 +26,7 @@ if __name__ == "__main__":
             # system settings
             "num_gpus": 1,
             "num_workers": 8,
+            "num_gpus_per_worker": 0,
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",

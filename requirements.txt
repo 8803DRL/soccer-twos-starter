@@ -7,6 +7,7 @@ gym-unity==0.27.0
 mlagents==0.27.0
 mlagents-envs==0.27.0
 numpy==1.19.5
-ray==1.4.0
-ray[tune]==1.4.0
-ray[rllib]==1.4.0
+ray[tune,rllib]==1.4.0
+protobuf==3.20.3
+pydantic==1.10.13
+ray[default]
