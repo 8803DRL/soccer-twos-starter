@@ -9,27 +9,32 @@
 #SBATCH --mem=128G
 #SBATCH -t12:00:00
 #SBATCH --output=soccertwos_mp-%j.out
+#SBATCH --error=soccertwos_mp-%j.err
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=zbguo@gatech.edu
 
 module load cuda/12.6
 
-# Try both common conda paths
-if [ -f ~/miniconda3/etc/profile.d/conda.sh ]; then
-    source ~/miniconda3/etc/profile.d/conda.sh
-elif [ -f ~/anaconda3/etc/profile.d/conda.sh ]; then
-    source ~/anaconda3/etc/profile.d/conda.sh
-fi
-conda activate soccertwos
+# Activate conda — use eval hook which works without conda init
+eval "$(conda shell.bash hook)" 2>/dev/null
+conda activate /storage/ice1/1/4/zguo407/soccertwos 2>/dev/null
+
+# Fallback: ensure the right python is on PATH
+export PATH="/storage/ice1/1/4/zguo407/soccertwos/bin:$PATH"
 
 cd $SLURM_SUBMIT_DIR/..
 
 echo "=== Job started at $(date) ==="
 echo "=== Node: $(hostname) ==="
+echo "=== Python: $(which python) ==="
 echo "=== GPU Info ==="
 nvidia-smi
 
-# Run the training script
+# Kill any leftover Unity processes from previous runs
+pkill -f SoccerTwos 2>/dev/null || true
+sleep 2
+
+# Run training (stderr goes to .err file via SBATCH --error)
 python train_selfplay_shaped.py
 
 echo "=== Job finished at $(date) ==="
