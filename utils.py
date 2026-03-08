@@ -25,15 +25,19 @@ def create_rllib_env(env_config: dict = {}):
             - opponent_policy: a Callable for your agent to train against. Defaults to a random policy.
             - reward_shaping: if True, wraps env with RewardShapingWrapper for dense rewards.
     """
-    # Extract custom keys before passing to soccer_twos.make()
-    use_reward_shaping = env_config.pop("reward_shaping", False) if isinstance(env_config, dict) else False
+    # Read custom keys (don't pop — config may be reused across envs)
+    use_reward_shaping = env_config.get("reward_shaping", False)
+
+    # Build a clean config dict for soccer_twos.make() (filter out unknown keys)
+    custom_keys = {"reward_shaping", "num_envs_per_worker"}
+    make_config = {k: v for k, v in env_config.items() if k not in custom_keys}
 
     if hasattr(env_config, "worker_index"):
-        env_config["worker_id"] = (
+        make_config["worker_id"] = (
             env_config.worker_index * env_config.get("num_envs_per_worker", 1)
             + env_config.vector_index
         )
-    env = soccer_twos.make(**env_config)
+    env = soccer_twos.make(**make_config)
 
     # Apply reward shaping wrapper if requested
     if use_reward_shaping:

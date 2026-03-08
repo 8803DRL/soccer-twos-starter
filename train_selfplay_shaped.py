@@ -70,7 +70,7 @@ class SelfPlayCallback(DefaultCallbacks):
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(include_dashboard=False)  # disable dashboard on HPC (avoids socket.gaierror)
 
     tune.registry.register_env("Soccer", create_rllib_env)
     temp_env = create_rllib_env({"reward_shaping": True})
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         config={
             # === System settings ===
             "num_gpus": 1,
-            "num_workers": 16,              # A40 node with 32 CPUs -> 16 workers
+            "num_workers": 8,               # 8 workers × 3 envs = 24 Unity envs (avoid port collisions)
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",
@@ -133,7 +133,7 @@ if __name__ == "__main__":
             },
 
             # === Rollout settings ===
-            "rollout_fragment_length": 2000,
+            "rollout_fragment_length": 1000,
             "batch_mode": "truncate_episodes",
         },
         stop={

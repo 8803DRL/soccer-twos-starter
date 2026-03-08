@@ -10,11 +10,16 @@
 #SBATCH -t12:00:00
 #SBATCH --output=soccertwos_mp-%j.out
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=zbguo3@gatech.edu
+#SBATCH --mail-user=zbguo@gatech.edu
 
 module load cuda/12.6
 
-source ~/miniconda3/etc/profile.d/conda.sh
+# Try both common conda paths
+if [ -f ~/miniconda3/etc/profile.d/conda.sh ]; then
+    source ~/miniconda3/etc/profile.d/conda.sh
+elif [ -f ~/anaconda3/etc/profile.d/conda.sh ]; then
+    source ~/anaconda3/etc/profile.d/conda.sh
+fi
 conda activate soccertwos
 
 cd $SLURM_SUBMIT_DIR/..
