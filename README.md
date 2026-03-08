@@ -3,9 +3,8 @@
 ## How to Run on PACE Cluster
 
 ### 1. Interactive Session / Configuration
-Recommended resource selection (ICE/Phoenix nodes):
+Recommended resource selection (ICE nodes):
 ![alt text](image.png)
-*Suggested: 1 GPU (A40/A100), 8-16 CPUs, and at least 64GB RAM.*
 
 ---
 

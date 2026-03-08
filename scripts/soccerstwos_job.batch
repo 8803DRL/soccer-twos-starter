@@ -1,23 +1,30 @@
 #!/bin/bash
 
-# Soccer Twos RL Training Job Example Batch Script for PACE
-# Author: Mili Das
-# Date: 2026
+# Soccer Twos RL Training Job - PPO Self-Play with Reward Shaping
+# PACE Cluster (ICE nodes, A40 GPU)
 
-# Replace gburdell3 with your GT username.
-# Replace the training script name with the actual script you want to run.
-
-#SBATCH --job-name=soccerstwos
-#SBATCH -N4 --ntasks-per-node=8
-#SBATCH --mem-per-cpu=6G
+#SBATCH --job-name=soccertwos_mp
+#SBATCH -N1 --ntasks-per-node=32
+#SBATCH --gres=gpu:A40:1
+#SBATCH --mem=128G
 #SBATCH -t12:00:00
-#SBATCH --output=soccerstwos-%j.out
+#SBATCH --output=soccertwos_mp-%j.out
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=gburbell3@gatech.edu
+#SBATCH --mail-user=zbguo3@gatech.edu
+
+module load cuda/12.6
 
 source ~/miniconda3/etc/profile.d/conda.sh
-conda activate soccerstwos
+conda activate soccertwos
+
+cd $SLURM_SUBMIT_DIR/..
+
+echo "=== Job started at $(date) ==="
+echo "=== Node: $(hostname) ==="
+echo "=== GPU Info ==="
+nvidia-smi
 
 # Run the training script
-python example_ray_ppo_sp_still.py
+python train_selfplay_shaped.py
 
+echo "=== Job finished at $(date) ==="
