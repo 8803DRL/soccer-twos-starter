@@ -133,4 +133,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Training related file output
 *.out
+*.err
+ray_results/

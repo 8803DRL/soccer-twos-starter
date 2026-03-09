@@ -143,6 +143,7 @@ if __name__ == "__main__":
         checkpoint_freq=50,
         checkpoint_at_end=True,
         local_dir="./ray_results",
+        # restore="<path_to_latest_checkpoint>"
     )
 
     # Print best results
