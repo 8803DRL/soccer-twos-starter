@@ -4,10 +4,10 @@
 # PACE Cluster (ICE nodes, A40 GPU)
 
 #SBATCH --job-name=soccertwos_mp
-#SBATCH -N1 --ntasks-per-node=32
-#SBATCH --gres=gpu:A40:1
-#SBATCH --mem=128G
-#SBATCH -t12:00:00
+#SBATCH -N1 --ntasks-per-node=12
+#SBATCH --gres=gpu:1
+#SBATCH --mem=48G
+#SBATCH -t04:00:00
 #SBATCH --output=soccertwos_mp-%j.out
 #SBATCH --error=soccertwos_mp-%j.err
 #SBATCH --mail-type=BEGIN,END,FAIL

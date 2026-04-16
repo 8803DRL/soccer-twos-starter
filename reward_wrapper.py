@@ -21,8 +21,9 @@ class RewardShapingWrapper(gym.core.Wrapper):
 
     # Reward shaping weights (kept small relative to goal reward of +1.0)
     BALL_PROXIMITY_WEIGHT = 0.005       # reward for getting closer to ball
-    BALL_TO_GOAL_WEIGHT = 0.01          # reward when ball moves toward opponent goal
+    BALL_TO_GOAL_WEIGHT = 0.05          # reward when ball moves toward opponent goal
     GOAL_PROXIMITY_BONUS = 0.002        # bonus when ball is near opponent goal
+    DANGER_ZONE_PENALTY = -0.002        # penalty when ball is near OWN goal
     EXISTENTIAL_PENALTY = -0.0001       # tiny penalty per step
 
     # Field geometry (approximate from curriculum.yaml)
@@ -83,11 +84,24 @@ class RewardShapingWrapper(gym.core.Wrapper):
             pass
 
         if player_pos is not None and ball_pos is not None:
-            # 1. Ball proximity reward
+            # 1. Ball proximity reward (with Own-Goal Safeguard)
             dist_to_ball = np.linalg.norm(player_pos - ball_pos)
+            
+            # Check if player is on the "wrong side" of the ball near their own goal.
+            # If so, approaching the ball will likely push it into their own net!
+            on_wrong_side = False
+            if agent_id in [0, 1]:  # Team 0 defends -x (-16)
+                if player_pos[0] > ball_pos[0] and ball_pos[0] < -8.0:
+                    on_wrong_side = True
+            else:  # Team 1 defends +x (+16)
+                if player_pos[0] < ball_pos[0] and ball_pos[0] > 8.0:
+                    on_wrong_side = True
+
             if agent_id in self.prev_dist_to_ball:
                 delta_dist = self.prev_dist_to_ball[agent_id] - dist_to_ball
-                shaped += self.BALL_PROXIMITY_WEIGHT * delta_dist
+                # Only reward moving towards the ball if they aren't about to score an own goal
+                if not on_wrong_side:
+                    shaped += self.BALL_PROXIMITY_WEIGHT * delta_dist
             self.prev_dist_to_ball[agent_id] = dist_to_ball
 
             # 2. Ball-to-goal alignment reward
@@ -102,14 +116,21 @@ class RewardShapingWrapper(gym.core.Wrapper):
                     shaped += self.BALL_TO_GOAL_WEIGHT * (-ball_dx)
             self.prev_ball_pos[agent_id] = ball_pos.copy()
 
-            # 3. Goal proximity bonus
+            # 3. Goal / Danger proximity logic
             if agent_id in [0, 1]:
-                dist_to_goal = abs(self.FIELD_X_MAX - ball_pos[0])
+                dist_to_opp_goal = abs(self.FIELD_X_MAX - ball_pos[0])
+                dist_to_own_goal = abs(self.FIELD_X_MIN - ball_pos[0])
             else:
-                dist_to_goal = abs(self.FIELD_X_MIN - ball_pos[0])
+                dist_to_opp_goal = abs(self.FIELD_X_MIN - ball_pos[0])
+                dist_to_own_goal = abs(self.FIELD_X_MAX - ball_pos[0])
 
-            if dist_to_goal < self.GOAL_PROXIMITY_THRESH:
+            # Bonus for keeping ball near opponent goal
+            if dist_to_opp_goal < self.GOAL_PROXIMITY_THRESH:
                 shaped += self.GOAL_PROXIMITY_BONUS
+                
+            # Penalty for letting ball loiter near OWN goal
+            if dist_to_own_goal < self.GOAL_PROXIMITY_THRESH:
+                shaped += self.DANGER_ZONE_PENALTY
 
             # 4. Existential penalty
             shaped += self.EXISTENTIAL_PENALTY
