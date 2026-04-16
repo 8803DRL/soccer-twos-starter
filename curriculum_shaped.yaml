@@ -1,0 +1,203 @@
+# Curriculum for PPO + Dense Reward Shaping + Self-Play
+# Each task advances when episode_reward_mean exceeds `threshold`.
+#
+# Stage progression:
+#   0  solo_chaser        — single agent, ball spawned close, no opponent
+#   1  solo_shooter       — single agent, ball near goal, must score
+#   2  solo_vs_static     — single agent vs frozen/random opponent
+#   3  duo_coordinated    — 2v0, two teammates learn to spread & pass
+#   4  duo_vs_static      — 2v2, opponents play random policy
+#   5  duo_vs_weak        — 2v2, opponents are early archived snapshots
+#   6  full_selfplay       — 2v2, full self-play opponent pool (final stage)
+
+tasks:
+  - name: solo_chaser
+    description: "One agent, ball spawned within 3 units, no opponent. Learn to approach & touch."
+    env_type: team_vs_policy        # single-team env
+    num_agents: 1
+    reward_weights:
+      approach:        0.012        # heavily reward approaching ball
+      touch:           0.10
+      goal_alignment:  0.001
+      spread:          0.000        # no teammate
+      concede_penalty: 0.0
+      goal_score:      1.0
+    config_fn: none
+    threshold: 0.6                  # advance when avg reward > 0.6
+    ranges:
+      ball:
+        x: [-3, 3]
+        z: [-3, 3]
+        vel_x: [0, 0]
+        vel_z: [0, 0]
+      players:
+        "0":
+          x: [-1, 1]
+          z: [-1, 1]
+          rot: [-10, 10]
+
+  - name: solo_shooter
+    description: "One agent, ball near opponent goal. Learn goal-directed shooting."
+    env_type: team_vs_policy
+    num_agents: 1
+    reward_weights:
+      approach:        0.006
+      touch:           0.08
+      goal_alignment:  0.010        # stronger alignment signal
+      spread:          0.000
+      concede_penalty: 0.0
+      goal_score:      1.0
+    config_fn: none
+    threshold: 1.0
+    ranges:
+      ball:
+        x: [-2, 2]
+        z: [2, 6]                   # ball placed in offensive half
+        vel_x: [0, 0]
+        vel_z: [0, 0]
+      players:
+        "0":
+          x: [-1, 1]
+          z: [0, 3]
+          rot: [-20, 20]
+
+  - name: solo_vs_static
+    description: "One agent vs random/frozen opponent. Introduce defensive pressure."
+    env_type: team_vs_policy
+    num_agents: 1
+    reward_weights:
+      approach:        0.005
+      touch:           0.06
+      goal_alignment:  0.008
+      spread:          0.000
+      concede_penalty: 0.3
+      goal_score:      1.0
+    config_fn: random_players       # opponent plays random policy
+    threshold: 1.2
+    ranges:
+      ball:
+        x: [-4, 4]
+        z: [-4, 4]
+        vel_x: [-1, 1]
+        vel_z: [-1, 1]
+      players:
+        "0":
+          x: [-2, 2]
+          z: [-5, 0]
+          rot: [-45, 45]
+
+  - name: duo_coordinated
+    description: "2v0: two teammates, no opponents. Learn spacing & coordinated attack."
+    env_type: team_vs_policy
+    num_agents: 2
+    reward_weights:
+      approach:        0.004
+      touch:           0.05
+      goal_alignment:  0.006
+      spread:          0.004        # now penalise clustering
+      concede_penalty: 0.0
+      goal_score:      1.0
+    config_fn: none
+    threshold: 1.4
+    ranges:
+      ball:
+        x: [-5, 5]
+        z: [-5, 5]
+        vel_x: [-1, 1]
+        vel_z: [-1, 1]
+      players:
+        "0":
+          x: [-3, 0]
+          z: [-5, 5]
+          rot: [-90, 90]
+        "1":
+          x: [0, 3]
+          z: [-5, 5]
+          rot: [-90, 90]
+
+  - name: duo_vs_static
+    description: "2v2 full match, opponents play random policy. Learn teamwork under pressure."
+    env_type: team_vs_team
+    num_agents: 2
+    reward_weights:
+      approach:        0.003
+      touch:           0.05
+      goal_alignment:  0.005
+      spread:          0.003
+      concede_penalty: 0.4
+      goal_score:      1.0
+    config_fn: random_players
+    threshold: 1.5
+    ranges:
+      ball:
+        x: [-5, 5]
+        z: [-5, 5]
+        vel_x: [-2, 2]
+        vel_z: [-2, 2]
+      players:
+        "0":
+          x: [-4, -1]
+          z: [-6, 6]
+          rot: [-180, 180]
+        "1":
+          x: [-1, 2]
+          z: [-6, 6]
+          rot: [-180, 180]
+
+  - name: duo_vs_weak
+    description: "2v2, opponents are early self-play snapshots. Bridge to full self-play."
+    env_type: team_vs_team
+    num_agents: 2
+    reward_weights:
+      approach:        0.003
+      touch:           0.05
+      goal_alignment:  0.004
+      spread:          0.002
+      concede_penalty: 0.45
+      goal_score:      1.0
+    config_fn: archived_weak        # uses opponent_1/2 from pool
+    threshold: 1.6
+    ranges:
+      ball:
+        x: [-5, 5]
+        z: [-5, 5]
+        vel_x: [-2, 2]
+        vel_z: [-2, 2]
+      players:
+        "0":
+          x: [-4, 0]
+          z: [-6, 6]
+          rot: [-180, 180]
+        "1":
+          x: [0, 4]
+          z: [-6, 6]
+          rot: [-180, 180]
+
+  - name: full_selfplay
+    description: "2v2 full self-play with rolling opponent pool. Final competitive stage."
+    env_type: team_vs_team
+    num_agents: 2
+    reward_weights:
+      approach:        0.003
+      touch:           0.05
+      goal_alignment:  0.002
+      spread:          0.001
+      concede_penalty: 0.5
+      goal_score:      1.0
+    config_fn: selfplay             # activates full opponent pool rotation
+    threshold: null                 # terminal stage — no advancement
+    ranges:
+      ball:
+        x: [-5, 5]
+        z: [-5, 5]
+        vel_x: [-2, 2]
+        vel_z: [-2, 2]
+      players:
+        "0":
+          x: [-4, 0]
+          z: [-6, 6]
+          rot: [-180, 180]
+        "1":
+          x: [0, 4]
+          z: [-6, 6]
+          rot: [-180, 180]
